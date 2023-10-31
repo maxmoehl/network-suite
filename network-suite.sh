@@ -54,7 +54,8 @@ __host() {
     show | list )  __host_show "${@}" ;;
 		delete | del ) __host_del "${@}" ;;
 		join )         __host_join "${@}" ;;
-		* )            __error "unknown command '${_host_cmd}'" ;;
+		help )         __help host ;;
+		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
 }
 
@@ -86,7 +87,8 @@ __net() {
 		add )          __net_add "${@}" ;;
     show | list )  __net_show "${@}" ;;
 		delete | del ) __net_del "${@}" ;;
-		* )            __error "unknown command '${_net_cmd}'" ;;
+		help )         __help net ;;
+		* )            __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
 	esac
 }
 
@@ -94,9 +96,9 @@ __help() {
 	_help_cmd="${1}"
 	case "${_help_cmd}" in
 		"" )
-			echo "Usage: network-suite COMMAND [ ARGS ]"
+			echo "Usage: ns COMMAND [ ARGS ]"
 			echo
-			echo "ns is an alias for network-suite."
+			echo "ns - simulate different network topologies."
 			echo
 			echo "Commands:"
 			echo "  net"
@@ -111,6 +113,7 @@ __help() {
 			echo "  help"
 			echo "    net"
 			echo "    host"
+			echo "    help"
 			echo
 			echo "Dependencies:"
 			echo "  grep(1)"
@@ -118,13 +121,11 @@ __help() {
 			echo "  sed(1)"
 			;;
 		help )
-			echo "Usage:"
-			echo "  ns help { net | host | help }"
+			echo "Usage: ns help { net | host | help }"
 			;;
 		net )
-			echo "Usage:"
-			echo "  ns net [ show ]"
-			echo "  ns net { add | del } NAME"
+			echo "Usage: ns net [ show ]"
+			echo "       ns net { add | del } NAME"
 			echo
 			echo "ns net [ show ]"
 			echo "  Show all existing networks."
@@ -133,10 +134,9 @@ __help() {
 			echo "  Create or delete the named network."
 			;;
 		host )
-			echo "Usage:"
-			echo "  ns host [ show ]"
-			echo "  ns host { add | del } NAME"
-			echo "  ns host join NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "Usage: ns host [ show ]"
+			echo "       ns host { add | del } NAME"
+			echo "       ns host join NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo
 			echo "ns host [ show ]"
 			echo "  Show all existing hosts."
@@ -150,18 +150,18 @@ __help() {
 			echo "  NETWORK-DEVICE will used in the network. IP will be assigned to"
 			echo "  both interfaces."
 			;;
-		* ) __error "unknown command '${_help_cmd}'" ;;
+		* ) __error "unknown command '${_help_cmd}', try 'ns help help'" ;;
 	esac
 }
 
 __ns() {
-	_cmd="${1:?error: command is empty}"
+	_cmd="${1:-help}"
 	__shift
 	case "${_cmd}" in
 		host ) __host "${@}" ;;
 		net )  __net  "${@}" ;;
 		help ) __help "${@}" ;;
-		* )    __error "unknown command '${_cmd}'"
+		* )    __error "unknown command '${_cmd}', try 'ns help'" ;;
 	esac
 }
 
