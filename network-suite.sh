@@ -46,6 +46,21 @@ __host_connect() {
 	ip -n "${_host_name}" link set "${_host_connect_dev}" up
 }
 
+# Usage: __host_shell NAME
+__host_shell() {
+	_host_name="host-${1:?error: host name is empty}"
+
+	if test -n "${SHELL}"; then
+		# shellcheck disable=SC2016
+		__error '$SHELL is empty'
+	fi
+
+	# we are probably run as sudo, try to guess the real user
+	_host_exec_uid="${SUDO_UID:-0}"
+
+	ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
+}
+
 __host() {
 	_host_cmd="${1:-show}"
 	__shift
@@ -54,6 +69,7 @@ __host() {
 		show | list )  __host_show "${@}" ;;
 		delete | del ) __host_del "${@}" ;;
 		connect )      __host_connect "${@}" ;;
+		shell )        __host_shell "${@}" ;;
 		help )         __help host ;;
 		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
@@ -96,7 +112,7 @@ __help() {
 	_help_cmd="${1}"
 	case "${_help_cmd}" in
 		"" )
-			echo "Usage: ns COMMAND [ ARGS ]"
+			echo "Usage: ns [ FLAGS ] COMMAND [ ARGS ]"
 			echo
 			echo "ns - simulate different network topologies."
 			echo
@@ -114,6 +130,9 @@ __help() {
 			echo "    net"
 			echo "    host"
 			echo "    help"
+			echo
+			echo "Flags:"
+			echo "  -v --verbose Enable debug logging using 'set -x'."
 			echo
 			echo "Dependencies:"
 			echo "  grep(1)"
@@ -137,6 +156,7 @@ __help() {
 			echo "Usage: ns host [ show ]"
 			echo "       ns host { add | del } NAME"
 			echo "       ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "       ns host shell NAME"
 			echo
 			echo "ns host [ show ]"
 			echo "  Show all existing hosts."
@@ -145,16 +165,28 @@ __help() {
 			echo "  Create or delete the named host."
 			echo
 			echo "ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
-			echo "  Add the host with NAME to NETWORK. Each side will get an device."
-			echo "  DEVICE is the name of the interface at the host and"
-			echo "  NETWORK-DEVICE will used in the network. IP will be assigned to"
-			echo "  both interfaces."
+			echo "  Add the host with NAME to NETWORK. Each side will get an device. DEVICE is the"
+			echo "  name of the interface at the host and NETWORK-DEVICE will used in the network."
+			echo "  IP will be assigned to both interfaces."
+			echo
+			echo "ns host shell NAME"
+			echo "  Spawn a shell on the host with NAME. The command will try to identify the"
+			echo "  calling user and run a login shell for that user (defaults to root)."
 			;;
 		* ) __error "unknown command '${_help_cmd}', try 'ns help help'" ;;
 	esac
 }
 
 __ns() {
+	while :; do
+		case "${1}" in
+			-v | --verbose ) set -x ;;
+			-* )             __error "unknown flag '${1}'" ;;
+			* )              break ;;
+		esac
+		__shift
+	done
+
 	_cmd="${1:-help}"
 	__shift
 	case "${_cmd}" in
