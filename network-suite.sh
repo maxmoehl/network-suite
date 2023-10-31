@@ -26,24 +26,24 @@ __host_del() {
 	ip netns delete "${_host_name}"
 }
 
-# Usage: __host_join NAME NETWORK DEVICE NETWORK-DEVICE IP
-__host_join() {
+# Usage: __host_connect NAME NETWORK DEVICE NETWORK-DEVICE IP
+__host_connect() {
 	_host_name="host-${1:?error: host name is empty}"
-	_host_join_net="network-${2:?error: network is empty}"
-	_host_join_dev="${3:?error: device name is empty}"
-	_host_join_net_dev="${4:?error: network device name is empty}"
-	_host_join_ip="${5:?error: ip is empty}"
+	_host_connect_net="network-${2:?error: network is empty}"
+	_host_connect_dev="${3:?error: device name is empty}"
+	_host_connect_net_dev="${4:?error: network device name is empty}"
+	_host_connect_ip="${5:?error: ip is empty}"
 
-	ip -n "${_host_join_net}" link show br0 > /dev/null || __error "unable to verify that br0 exists in ${_host_join_net}"
+	ip -n "${_host_connect_net}" link show br0 > /dev/null || __error "unable to verify that br0 exists in ${_host_connect_net}"
 
-  ip -n "${_host_join_net}" link add "${_host_join_net_dev}" type veth peer name "${_host_join_dev}" netns "${_host_name}"
-  ip -n "${_host_join_net}" link set "${_host_join_net_dev}" master br0
+	ip -n "${_host_connect_net}" link add "${_host_connect_net_dev}" type veth peer name "${_host_connect_dev}" netns "${_host_name}"
+	ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" master br0
 
-  ip -n "${_host_join_net}" addr add "${_host_join_ip}" dev "${_host_join_net_dev}"
-  ip -n "${_host_name}" addr add "${_host_join_ip}" dev "${_host_join_dev}"
+	ip -n "${_host_connect_net}" addr add "${_host_connect_ip}" dev "${_host_connect_net_dev}"
+	ip -n "${_host_name}" addr add "${_host_connect_ip}" dev "${_host_connect_dev}"
 
-  ip -n "${_host_join_net}" link set "${_host_join_net_dev}" up
-  ip -n "${_host_name}" link set "${_host_join_dev}" up
+	ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" up
+	ip -n "${_host_name}" link set "${_host_connect_dev}" up
 }
 
 __host() {
@@ -51,9 +51,9 @@ __host() {
 	__shift
 	case "${_host_cmd}" in
 		add )          __host_add "${@}" ;;
-    show | list )  __host_show "${@}" ;;
+		show | list )  __host_show "${@}" ;;
 		delete | del ) __host_del "${@}" ;;
-		join )         __host_join "${@}" ;;
+		connect )      __host_connect "${@}" ;;
 		help )         __help host ;;
 		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
@@ -85,7 +85,7 @@ __net() {
 	__shift
 	case "${_net_cmd}" in
 		add )          __net_add "${@}" ;;
-    show | list )  __net_show "${@}" ;;
+		show | list )  __net_show "${@}" ;;
 		delete | del ) __net_del "${@}" ;;
 		help )         __help net ;;
 		* )            __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
@@ -102,14 +102,14 @@ __help() {
 			echo
 			echo "Commands:"
 			echo "  net"
-			echo "    add    NAME"
+			echo "    add     NAME"
 			echo "    show"
-			echo "    delete NAME"
+			echo "    delete  NAME"
 			echo "  host"
-			echo "    add    NAME"
+			echo "    add     NAME"
 			echo "    show"
-			echo "    delete NAME"
-			echo "    join   NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "    delete  NAME"
+			echo "    connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo "  help"
 			echo "    net"
 			echo "    host"
@@ -136,7 +136,7 @@ __help() {
 		host )
 			echo "Usage: ns host [ show ]"
 			echo "       ns host { add | del } NAME"
-			echo "       ns host join NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "       ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo
 			echo "ns host [ show ]"
 			echo "  Show all existing hosts."
@@ -144,7 +144,7 @@ __help() {
 			echo "ns host { add | del } NAME"
 			echo "  Create or delete the named host."
 			echo
-			echo "ns host join NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo "  Add the host with NAME to NETWORK. Each side will get an device."
 			echo "  DEVICE is the name of the interface at the host and"
 			echo "  NETWORK-DEVICE will used in the network. IP will be assigned to"
