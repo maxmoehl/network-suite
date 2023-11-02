@@ -61,6 +61,14 @@ __host_shell() {
 	ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
 }
 
+# Usage: __host_ip NAME IP_COMMAND...
+__host_ip() {
+	_host_name="host-${1:?error: host name is empty}"
+	__shift
+
+	ip -n "${_host_name}" "${@}"
+}
+
 __host() {
 	_host_cmd="${1:-show}"
 	__shift
@@ -70,6 +78,7 @@ __host() {
 		delete | del ) __host_del "${@}" ;;
 		connect )      __host_connect "${@}" ;;
 		shell )        __host_shell "${@}" ;;
+		ip )           __host_ip "${@}" ;;
 		help )         __help host ;;
 		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
@@ -96,6 +105,13 @@ __net_del() {
 	ip netns delete "${_net_name}"
 }
 
+# Usage: __net_ip NAME IP_COMMAND
+__net_ip() {
+	_net_name="network-${1:?error: network name is empty}"
+	__shift
+	ip -n "${_net_name}" "${@}"
+}
+
 __net() {
 	_net_cmd="${1:-show}"
 	__shift
@@ -103,6 +119,7 @@ __net() {
 		add )          __net_add "${@}" ;;
 		show | list )  __net_show "${@}" ;;
 		delete | del ) __net_del "${@}" ;;
+		ip )           __net_ip "${@}" ;;
 		help )         __help net ;;
 		* )            __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
 	esac
@@ -121,11 +138,13 @@ __help() {
 			echo "    add     NAME"
 			echo "    show"
 			echo "    delete  NAME"
+			echo "    ip      NAME IP_COMMAND"
 			echo "  host"
 			echo "    add     NAME"
 			echo "    show"
 			echo "    delete  NAME"
 			echo "    connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
+			echo "    ip      NAME IP_COMMAND"
 			echo "  help"
 			echo "    net"
 			echo "    host"
@@ -145,18 +164,23 @@ __help() {
 		net )
 			echo "Usage: ns net [ show ]"
 			echo "       ns net { add | del } NAME"
+			echo "       ns net ip IP_COMMAND"
 			echo
 			echo "ns net [ show ]"
 			echo "  Show all existing networks."
 			echo
 			echo "ns net { add | del } NAME"
 			echo "  Create or delete the named network."
+			echo
+			echo "ns net ip NAME IP_COMMAND"
+			echo "  Execute an ip command in the namespace of the network."
 			;;
 		host )
 			echo "Usage: ns host [ show ]"
 			echo "       ns host { add | del } NAME"
 			echo "       ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo "       ns host shell NAME"
+			echo "       ns host ip NAME IP_COMMAND"
 			echo
 			echo "ns host [ show ]"
 			echo "  Show all existing hosts."
@@ -172,6 +196,9 @@ __help() {
 			echo "ns host shell NAME"
 			echo "  Spawn a shell on the host with NAME. The command will try to identify the"
 			echo "  calling user and run a login shell for that user (defaults to root)."
+			echo
+			echo "ns host ip NAME IP_COMMAND"
+			echo "  Execute an ip command in the namespace of the host."
 			;;
 		* ) __error "unknown command '${_help_cmd}', try 'ns help help'" ;;
 	esac
