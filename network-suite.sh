@@ -50,7 +50,7 @@ __host_connect() {
 __host_shell() {
 	_host_name="host-${1:?error: host name is empty}"
 
-	if test -n "${SHELL}"; then
+	if test -z "${SHELL}"; then
 		# shellcheck disable=SC2016
 		__error '$SHELL is empty'
 	fi
