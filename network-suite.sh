@@ -1,5 +1,7 @@
 #!/bin/sh -e
 
+Dump=0
+
 __error() {
 	echo "error: ${*}" > /dev/stderr
 	return 1
@@ -9,21 +11,30 @@ __error() {
 # don't want that.
 alias __shift='test "${#}" -gt 0 && shift'
 
+# Execute ip commands or dump them to stdout.
+__ip() {
+	if test "${Dump}" -eq 1; then
+		echo "ip ${*}"
+	else
+		ip "${@}"
+	fi
+}
+
 # Usage: __host_add NAME
 __host_add() {
 	_host_name="host-${1:?error: host name is empty}"
-	ip netns add "${_host_name}"
-	ip -n "${_host_name}" link set lo up
+	__ip netns add "${_host_name}"
+	__ip -n "${_host_name}" link set lo up
 }
 
 __host_show() {
-	ip netns show | grep '^host-' | sed -e 's/host-//'
+	__ip netns show | grep '^host-' | sed -e 's/host-//'
 }
 
 # Usage: __host_del NAME
 __host_del() {
 	_host_name="host-${1:?error: host name is empty}"
-	ip netns delete "${_host_name}"
+	__ip netns delete "${_host_name}"
 }
 
 # Usage: __host_connect NAME NETWORK DEVICE NETWORK-DEVICE IP
@@ -34,16 +45,16 @@ __host_connect() {
 	_host_connect_net_dev="${4:?error: network device name is empty}"
 	_host_connect_ip="${5:?error: ip is empty}"
 
-	ip -n "${_host_connect_net}" link show br0 > /dev/null || __error "unable to verify that br0 exists in ${_host_connect_net}"
+	__ip -n "${_host_connect_net}" link show br0 > /dev/null || __error "unable to verify that br0 exists in ${_host_connect_net}"
 
-	ip -n "${_host_connect_net}" link add "${_host_connect_net_dev}" type veth peer name "${_host_connect_dev}" netns "${_host_name}"
-	ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" master br0
+	__ip -n "${_host_connect_net}" link add "${_host_connect_net_dev}" type veth peer name "${_host_connect_dev}" netns "${_host_name}"
+	__ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" master br0
 
-	ip -n "${_host_connect_net}" addr add "${_host_connect_ip}" dev "${_host_connect_net_dev}"
-	ip -n "${_host_name}" addr add "${_host_connect_ip}" dev "${_host_connect_dev}"
+	__ip -n "${_host_connect_net}" addr add "${_host_connect_ip}" dev "${_host_connect_net_dev}"
+	__ip -n "${_host_name}" addr add "${_host_connect_ip}" dev "${_host_connect_dev}"
 
-	ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" up
-	ip -n "${_host_name}" link set "${_host_connect_dev}" up
+	__ip -n "${_host_connect_net}" link set "${_host_connect_net_dev}" up
+	__ip -n "${_host_name}" link set "${_host_connect_dev}" up
 }
 
 # Usage: __host_shell NAME
@@ -58,7 +69,7 @@ __host_shell() {
 	# we are probably run as sudo, try to guess the real user
 	_host_exec_uid="${SUDO_UID:-0}"
 
-	ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
+	__ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
 }
 
 # Usage: __host_ip NAME IP_COMMAND...
@@ -66,7 +77,7 @@ __host_ip() {
 	_host_name="host-${1:?error: host name is empty}"
 	__shift
 
-	ip -n "${_host_name}" "${@}"
+	__ip -n "${_host_name}" "${@}"
 }
 
 __host() {
@@ -87,29 +98,29 @@ __host() {
 # Usage: __net_add NAME
 __net_add() {
 	_net_name="network-${1:?error: network name is empty}"
-	ip netns add "${_net_name}"
-	ip -n "${_net_name}" link set lo up
+	__ip netns add "${_net_name}"
+	__ip -n "${_net_name}" link set lo up
 
 	# peers on a network are connected using a bridge
-	ip -n "${_net_name}" link add br0 type bridge
-	ip -n "${_net_name}" link set br0 up
+	__ip -n "${_net_name}" link add br0 type bridge
+	__ip -n "${_net_name}" link set br0 up
 }
 
 __net_show() {
-	ip netns show | grep '^network-' | sed -e 's/network-//'
+	__ip netns show | grep '^network-' | sed -e 's/network-//'
 }
 
 # Usage: __net_del NAME
 __net_del() {
 	_net_name="network-${1:?error: network name is empty}"
-	ip netns delete "${_net_name}"
+	__ip netns delete "${_net_name}"
 }
 
 # Usage: __net_ip NAME IP_COMMAND
 __net_ip() {
 	_net_name="network-${1:?error: network name is empty}"
 	__shift
-	ip -n "${_net_name}" "${@}"
+	__ip -n "${_net_name}" "${@}"
 }
 
 __net() {
@@ -152,6 +163,7 @@ __help() {
 			echo
 			echo "Flags:"
 			echo "  -v --verbose Enable debug logging using 'set -x'."
+			echo "  -d --dump    Print ip commands to stdout instead of executing them."
 			echo
 			echo "Dependencies:"
 			echo "  grep(1)"
@@ -208,6 +220,7 @@ __ns() {
 	while :; do
 		case "${1}" in
 			-v | --verbose ) set -x ;;
+			-d | --dump )    Dump=1 ;;
 			-* )             __error "unknown flag '${1}'" ;;
 			* )              break ;;
 		esac
