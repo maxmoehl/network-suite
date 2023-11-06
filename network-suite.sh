@@ -44,7 +44,7 @@ __host_show() {
 
 # Usage: __host_del NAME
 __host_del() {
-	_host_name="host-${1:?error: host name is empty}"; __validate "${_host_name}"
+	_host_name="${1:?error: host name is empty}"; __validate "${_host_name}"
 
 	__ip netns delete "host-${_host_name}"
 }
