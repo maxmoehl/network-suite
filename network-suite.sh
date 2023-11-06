@@ -18,7 +18,7 @@ __validate() {
 	if [ "${1}" = "br0" ]; then __error "'br0' is a reserved name"; fi
 
 	# must be a valid device name
-	if ! expr "${1}" : "^[a-zA-Z0-9_-]\{1,15\}$" > /dev/null; then __error "'${1}' is not a valid name"; fi
+	if ! expr "${1}" : "^[a-zA-Z0-9_-]\{2,15\}$" > /dev/null; then __error "'${1}' is not a valid name"; fi
 }
 
 # Execute ip commands or dump them to stdout.
