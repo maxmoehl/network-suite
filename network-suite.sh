@@ -13,6 +13,7 @@ __error() {
 # shift can exit with a non-zero code if there are no more arguments, we
 # don't want that.
 alias __shift='test "${#}" -gt 0 && shift'
+alias __strip_prefix='sed -E "s/(${HOST_PREFIX})|(${NETWORK_PREFIX})//g"'
 
 # Usage: __validate NAME
 __validate() {
@@ -42,7 +43,13 @@ __host_add() {
 }
 
 __host_show() {
-	__ip netns show | grep "^${HOST_PREFIX}" | sed -e "s/${HOST_PREFIX}//"
+	if [ "$(id -u)" -ne 0 ]; then
+		ip netns show | grep "^${HOST_PREFIX}" | __strip_prefix | sort
+	else
+		ip netns show | grep "^${HOST_PREFIX}" | sort | while read -r _host_name; do
+			echo "$(echo "${_host_name}" | __strip_prefix) ($(ip -o -n "${_host_name}" link show | grep -oP '[a-zA-Z0-9]+(?=@[a-zA-Z0-9]+)' | sort | xargs))"
+		done
+	fi
 }
 
 # Usage: __host_del NAME
@@ -128,7 +135,13 @@ __net_add() {
 }
 
 __net_show() {
-	__ip netns show | grep "^${NETWORK_PREFIX}" | sed -e "s/${NETWORK_PREFIX}//"
+	if [ "$(id -u)" -ne 0 ]; then
+		ip netns show | grep "^${NETWORK_PREFIX}" | __strip_prefix | sort
+	else
+		ip netns show | grep "^${NETWORK_PREFIX}" | sort | while read -r _net_name; do
+			echo "$(echo "${_net_name}" | __strip_prefix) ($(ip -o -n "${_net_name}" link show | grep -oP '[a-zA-Z0-9]+(?=@[a-zA-Z0-9]+)' | sort | xargs))"
+		done
+	fi
 }
 
 # Usage: __net_del NAME
@@ -200,30 +213,32 @@ __help() {
 			;;
 		net )
 			echo "Usage: ns net [ show ]"
-			echo "       ns net { add | del } NAME"
+			echo "       ns net { add | delete } NAME"
 			echo "       ns net ip IP_COMMAND"
 			echo
 			echo "ns net [ show ]"
-			echo "  Show all existing networks."
+			echo "  Show all existing networks. If invoked as root the output will include the"
+			echo "  connected hosts in parentheses after the network name."
 			echo
-			echo "ns net { add | del } NAME"
-			echo "  Create or delete the named network."
+			echo "ns net { add | delete } NAME"
+			echo "  Add or delete the named network."
 			echo
 			echo "ns net ip NAME IP_COMMAND"
 			echo "  Execute an ip command in the namespace of the network."
 			;;
 		host )
 			echo "Usage: ns host [ show ]"
-			echo "       ns host { add | del } NAME"
+			echo "       ns host { add | delete } NAME"
 			echo "       ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo "       ns host shell NAME"
 			echo "       ns host ip NAME IP_COMMAND"
 			echo
 			echo "ns host [ show ]"
-			echo "  Show all existing hosts."
+			echo "  Show all existing hosts. If invoked as root the output will include the"
+			echo "  networks the host is connected to in parentheses after the host name."
 			echo
-			echo "ns host { add | del } NAME"
-			echo "  Create or delete the named host."
+			echo "ns host { add | delete } NAME"
+			echo "  Add or delete the named host."
 			echo
 			echo "ns host connect NAME NETWORK IP"
 			echo "  Add the host with NAME to NETWORK. Each side will get an device. IP will be"
