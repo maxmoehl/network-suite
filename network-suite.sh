@@ -111,10 +111,14 @@ __host_shell() {
 		__error '$SHELL is empty'
 	fi
 
+	# maintain SHLVL accordingly, even if not explicitly supported by this shell
+	# shellcheck disable=SC2039
+	_host_shell_lvl=$(( ${SHLVL:-1} + 1 ))
+
 	# we are probably run as sudo, try to guess the real user
 	_host_exec_uid="${SUDO_UID:-0}"
 
-	__ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
+	__ip netns exec "${_host_name}" env NS_HOST="${1}" SHLVL="${_host_shell_lvl}" su -w NS_HOST,SHLVL "$(id -un "${_host_exec_uid}")" --login
 }
 
 __host() {
