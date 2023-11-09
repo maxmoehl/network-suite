@@ -34,6 +34,16 @@ __ip() {
 	fi
 }
 
+# Usage: __host_ip NAME IP_COMMAND...
+__host_ip() {
+	_host_name="${HOST_PREFIX}${1:?error: NAME is empty}"; __validate "${_host_name}"
+	__shift
+
+	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
+
+	__ip -n "${_host_name}" "${@}"
+}
+
 # Usage: __host_add NAME
 __host_add() {
 	_host_name="${HOST_PREFIX}${1:?error: NAME is empty}"; __validate "${_host_name}"
@@ -42,7 +52,7 @@ __host_add() {
 	__ip -n "${_host_name}" link set lo up
 }
 
-__host_show() {
+__host_list() {
 	if [ "$(id -u)" -ne 0 ]; then
 		ip netns show | grep "^${HOST_PREFIX}" | __strip_prefix | sort
 	else
@@ -50,6 +60,16 @@ __host_show() {
 			echo "$(echo "${_host_name}" | __strip_prefix) ($(ip -o -n "${_host_name}" link show | grep -oP '[a-zA-Z0-9]+(?=@[a-zA-Z0-9]+)' | sort | xargs))"
 		done
 	fi
+}
+
+# Usage: __host_show [ NAME ]
+__host_show() {
+	if [ "${#}" -eq 0 ]; then
+		__host_list
+		return
+	fi
+
+	__host_ip "${1}" -br address show
 }
 
 # Usage: __host_del NAME
@@ -97,29 +117,30 @@ __host_shell() {
 	__ip netns exec "${_host_name}" su "$(id -un "${_host_exec_uid}")" --login
 }
 
-# Usage: __host_ip NAME IP_COMMAND...
-__host_ip() {
-	_host_name="${HOST_PREFIX}${1:?error: NAME is empty}"; __validate "${_host_name}"
-	__shift
-
-	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
-
-	__ip -n "${_host_name}" "${@}"
-}
-
 __host() {
 	_host_cmd="${1:-show}"
 	__shift
 	case "${_host_cmd}" in
+		ip )           __host_ip "${@}" ;;
 		add )          __host_add "${@}" ;;
-		show | list )  __host_show "${@}" ;;
+		list )         __host_list "${@}" ;;
+		show )         __host_show "${@}" ;;
 		delete | del ) __host_del "${@}" ;;
 		connect )      __host_connect "${@}" ;;
 		shell )        __host_shell "${@}" ;;
-		ip )           __host_ip "${@}" ;;
 		help )         __help host ;;
 		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
+}
+
+# Usage: __net_ip NAME IP_COMMAND...
+__net_ip() {
+	_net_name="${NETWORK_PREFIX}${1:?error: NAME is empty}"; __validate "${_net_name}"
+	__shift
+
+	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
+
+	__ip -n "${_net_name}" "${@}"
 }
 
 # Usage: __net_add NAME
@@ -134,7 +155,7 @@ __net_add() {
 	__ip -n "${_net_name}" link set br0 up
 }
 
-__net_show() {
+__net_list() {
 	if [ "$(id -u)" -ne 0 ]; then
 		ip netns show | grep "^${NETWORK_PREFIX}" | __strip_prefix | sort
 	else
@@ -144,6 +165,16 @@ __net_show() {
 	fi
 }
 
+# Usage: __host_show [ NAME ]
+__net_show() {
+	if [ "${#}" -eq 0 ]; then
+		__net_list
+		return
+	fi
+
+	__net_ip "${1}" -br address show
+}
+
 # Usage: __net_del NAME
 __net_del() {
 	_net_name="${NETWORK_PREFIX}${1:?error: NAME is empty}"; __validate "${_net_name}"
@@ -151,24 +182,15 @@ __net_del() {
 	__ip netns delete "${_net_name}"
 }
 
-# Usage: __net_ip NAME IP_COMMAND...
-__net_ip() {
-	_net_name="${NETWORK_PREFIX}${1:?error: NAME is empty}"; __validate "${_net_name}"
-	__shift
-
-	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
-
-	__ip -n "${_net_name}" "${@}"
-}
-
 __net() {
 	_net_cmd="${1:-show}"
 	__shift
 	case "${_net_cmd}" in
-		add )          __net_add "${@}" ;;
-		show | list )  __net_show "${@}" ;;
-		delete | del ) __net_del "${@}" ;;
 		ip )           __net_ip "${@}" ;;
+		add )          __net_add "${@}" ;;
+		list )         __net_list "${@}" ;;
+		show )         __net_show "${@}" ;;
+		delete | del ) __net_del "${@}" ;;
 		help )         __help net ;;
 		* )            __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
 	esac
@@ -212,33 +234,33 @@ __help() {
 			echo "Usage: ns help { net | host | help }"
 			;;
 		net )
-			echo "Usage: ns net [ show ]"
+			echo "Usage: ns net [ list | show ]"
 			echo "       ns net { add | delete } NAME"
 			echo "       ns net ip IP_COMMAND"
 			echo
-			echo "ns net [ show ]"
+			echo "ns net [ list | show ]"
 			echo "  Show all existing networks. If invoked as root the output will include the"
 			echo "  connected hosts in parentheses after the network name."
 			echo
-			echo "ns net { add | delete } NAME"
-			echo "  Add or delete the named network."
+			echo "ns net { add | delete | show } NAME"
+			echo "  Add, delete or show the named network."
 			echo
 			echo "ns net ip NAME IP_COMMAND"
 			echo "  Execute an ip command in the namespace of the network."
 			;;
 		host )
-			echo "Usage: ns host [ show ]"
-			echo "       ns host { add | delete } NAME"
+			echo "Usage: ns host [ list | show ]"
+			echo "       ns host { add | delete | show } NAME"
 			echo "       ns host connect NAME NETWORK DEVICE NETWORK-DEVICE IP"
 			echo "       ns host shell NAME"
 			echo "       ns host ip NAME IP_COMMAND"
 			echo
-			echo "ns host [ show ]"
-			echo "  Show all existing hosts. If invoked as root the output will include the"
+			echo "ns host [ list | show ]"
+			echo "  List all existing hosts. If invoked as root the output will include the"
 			echo "  networks the host is connected to in parentheses after the host name."
 			echo
-			echo "ns host { add | delete } NAME"
-			echo "  Add or delete the named host."
+			echo "ns host { add | delete | show } NAME"
+			echo "  Add, delete or show the named host."
 			echo
 			echo "ns host connect NAME NETWORK IP"
 			echo "  Add the host with NAME to NETWORK. Each side will get an device. IP will be"
@@ -269,8 +291,8 @@ __ns() {
 	_cmd="${1:-help}"
 	__shift
 	case "${_cmd}" in
-		host ) __host "${@}" ;;
-		net )  __net  "${@}" ;;
+		h | host ) __host "${@}" ;;
+		n | net )  __net  "${@}" ;;
 		help ) __help "${@}" ;;
 		* )    __error "unknown command '${_cmd}', try 'ns help'" ;;
 	esac
