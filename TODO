@@ -1,0 +1,14 @@
+Batch Processing
+----------------
+
+Allow a file as input for commands. Commands should not be prefixed
+with 'ns' in that case. Either via a flag '-b | --batch' or command
+'batch'. Also include the option to force execution to proceed in
+case of failure '-f | --force'.
+
+ip Batch Output
+---------------
+
+Add option to output commands in a format that can be fed to 'ip -b'.
+Consider which is the more useful case: with or without ip prefixed?
+Possible name: '--(no-)prepend-ip-command'

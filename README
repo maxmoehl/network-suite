@@ -1,0 +1,68 @@
+network-suite
+=============
+
+A shell script to emulate different network setups using network
+namespaces.
+
+Simple Network
+--------------
+
+Creating hosts and networks is simple:
+
+    # ns host add host-a
+    # ns host add host-b
+
+    # ns net add subnet
+
+Connect them with the host-connect command:
+
+    # ns host connect host-a subnet 10.0.0.1/24
+    # ns host connect host-b subnet 10.0.0.2/24
+
+Now both hosts can talk to each other:
+
+    # ns host shell host-a
+    $ ping 10.0.0.2                                                                                                                                                                                                            ~
+    PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.
+    64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.223 ms
+    64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.168 ms
+    64 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.204 ms
+    ^C
+    --- 10.0.0.2 ping statistics ---
+    3 packets transmitted, 3 received, 0% packet loss, time 2046ms
+    rtt min/avg/max/mdev = 0.168/0.198/0.223/0.022 ms
+
+For details on the different commands refer to the help output from
+ns (you can also check the '__help' function in the script).
+
+Design
+------
+
+ns is built as a wrapper around ip(8) from the iproute2 package.
+As such, a lot of inspiration has been taken from that command. But
+the interface overall is kept more simple for the sake of making the
+script readable _and_ POSIX compliant. For example options have to be
+in a fixed order instead of the key-value style of ip.
+
+Internals
+---------
+
+To see what is happening behind the scenes use either '-v' to see
+every single statement or '-d' to only print the resulting ip
+commands without executing them.
+
+Each host and each network are represented by a network namespace.
+To separate the two kinds they get (mostly) invisible prefixes.
+Networks are prefixed with 'nsn-' and hosts with 'nsh-'. This
+prevents operations from changing the wrong entity.
+
+For every network namespace the loopback interface is brought up and
+for networks a bridge is created. When connecting a host to a network
+a veth pair is created. One end in the host (named after the
+connected network) and the other in the network (named after the
+connected host). The network side has the bridge set as its master.
+
+Future Work
+-----------
+
+See TODO for details on planned features.
