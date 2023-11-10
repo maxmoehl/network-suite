@@ -1,10 +1,12 @@
-INSTALL_PATH=~/.local/bin
+SUDO=sudo
+INSTALL_PATH=/usr/local/bin
 
-ifneq ($(INSTALL_GLOBAL),)
-	INSTALL_PATH=/usr/local/bin
+ifneq ($(INSTALL_LOCAL),)
+	SUDO=
+	INSTALL_PATH=~/.local/bin
 endif
 
 install:
 	mkdir -p $(INSTALL_PATH)
-	cp ./network-suite.sh $(INSTALL_PATH)/ns
+	$(SUDO) cp ./network-suite.sh $(INSTALL_PATH)/ns
 	chmod +x $(INSTALL_PATH)/ns
