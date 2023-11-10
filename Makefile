@@ -7,6 +7,6 @@ ifneq ($(INSTALL_LOCAL),)
 endif
 
 install:
-	mkdir -p $(INSTALL_PATH)
+	$(SUDO) mkdir -p $(INSTALL_PATH)
 	$(SUDO) cp ./network-suite.sh $(INSTALL_PATH)/ns
-	chmod +x $(INSTALL_PATH)/ns
+	$(SUDO) chmod +x $(INSTALL_PATH)/ns
