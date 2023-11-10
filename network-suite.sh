@@ -125,15 +125,15 @@ __host() {
 	_host_cmd="${1:-show}"
 	__shift
 	case "${_host_cmd}" in
-		ip )           __host_ip "${@}" ;;
-		add )          __host_add "${@}" ;;
-		list )         __host_list "${@}" ;;
-		show )         __host_show "${@}" ;;
-		delete | del ) __host_del "${@}" ;;
-		connect )      __host_connect "${@}" ;;
-		shell )        __host_shell "${@}" ;;
-		help )         __help host ;;
-		* )            __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
+		i | ip )           __host_ip "${@}" ;;
+		a | add )          __host_add "${@}" ;;
+		l | list )         __host_list "${@}" ;;
+		s | show )         __host_show "${@}" ;;
+		d | del | delete ) __host_del "${@}" ;;
+		c | connect )      __host_connect "${@}" ;;
+		sh | shell )       __host_shell "${@}" ;;
+		help )             __help host ;;
+		* )                __error "unknown command '${_host_cmd}', try 'ns host help'" ;;
 	esac
 }
 
@@ -190,13 +190,13 @@ __net() {
 	_net_cmd="${1:-show}"
 	__shift
 	case "${_net_cmd}" in
-		ip )           __net_ip "${@}" ;;
-		add )          __net_add "${@}" ;;
-		list )         __net_list "${@}" ;;
-		show )         __net_show "${@}" ;;
-		delete | del ) __net_del "${@}" ;;
-		help )         __help net ;;
-		* )            __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
+		i | ip )           __net_ip "${@}" ;;
+		a | add )          __net_add "${@}" ;;
+		l | list )         __net_list "${@}" ;;
+		s | show )         __net_show "${@}" ;;
+		d | del | delete ) __net_del "${@}" ;;
+		help )             __help net ;;
+		* )                __error "unknown command '${_net_cmd}', try 'ns net help'" ;;
 	esac
 }
 
@@ -224,6 +224,11 @@ __help() {
 			echo "    net"
 			echo "    host"
 			echo "    help"
+			echo
+			echo "Commands and sub-commands may be abbreviated, e.g. 'h' instead of 'host' or"
+			echo "'a' instead of 'add'. If two or more commands start with the same letter the"
+			echo "more common command is selected, e.g. 's' is the same as 'show' and 'shell'"
+			echo "can be abbreviated as 'sh'. Try to catch them all!"
 			echo
 			echo "Flags:"
 			echo "  -v --verbose Enable debug logging using 'set -x'."
@@ -297,8 +302,8 @@ __ns() {
 	case "${_cmd}" in
 		h | host ) __host "${@}" ;;
 		n | net )  __net  "${@}" ;;
-		help ) __help "${@}" ;;
-		* )    __error "unknown command '${_cmd}', try 'ns help'" ;;
+		help )     __help "${@}" ;;
+		* )        __error "unknown command '${_cmd}', try 'ns help'" ;;
 	esac
 }
 
