@@ -4,6 +4,13 @@ network-suite
 A shell script to emulate different network setups using network
 namespaces.
 
+Installation
+------------
+
+    git clone https://github.com/maxmoehl/network-suite
+    cd ./network-suite
+    make install # requires sudo access
+
 Simple Network
 --------------
 
