@@ -22,7 +22,7 @@ Connect them with the host-connect command:
 Now both hosts can talk to each other:
 
     # ns host shell host-a
-    $ ping 10.0.0.2                                                                                                                                                                                                            ~
+    $ ping 10.0.0.2
     PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.
     64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.223 ms
     64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.168 ms
