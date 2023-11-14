@@ -25,7 +25,7 @@ __validate() {
 	if ! expr "${1}" : "^[a-zA-Z0-9_-]\{2,15\}$" > /dev/null; then __error "'${1}' is not a valid name"; fi
 }
 
-# Execute ip commands or dump them to stdout.
+# Execute ip command or dump it to stdout.
 __ip() {
 	if [ "${Dump}" -eq 1 ]; then
 		echo "ip ${*}"
@@ -200,6 +200,18 @@ __net() {
 	esac
 }
 
+__batch() {
+	_batch_file="${1:?error: FILE is empty}"
+
+	if [ ! -f "${_batch_file}" ]; then __error "'${_batch_file}' is not a file"; fi
+
+	while read -r line; do
+		# We _want_ word splitting, that's the whole reason we are doing this.
+		# shellcheck disable=SC2046
+		__ns $(echo "${line}" | xargs)
+	done < "${_batch_file}"
+}
+
 __help() {
 	_help_cmd="${1}"
 	case "${_help_cmd}" in
@@ -220,6 +232,7 @@ __help() {
 			echo "    delete  NAME"
 			echo "    connect NAME NETWORK IP"
 			echo "    ip      NAME IP_COMMAND"
+			echo "  batch     FILE"
 			echo "  help"
 			echo "    net"
 			echo "    host"
@@ -238,9 +251,6 @@ __help() {
 			echo "  grep(1)"
 			echo "  ip(8)"
 			echo "  sed(1)"
-			;;
-		help )
-			echo "Usage: ns help { net | host | help }"
 			;;
 		net )
 			echo "Usage: ns net [ list | show ]"
@@ -282,6 +292,14 @@ __help() {
 			echo "ns host ip NAME IP_COMMAND"
 			echo "  Execute an ip command in the namespace of the host."
 			;;
+		batch )
+			echo "Usage: ns batch FILE"
+			echo
+			echo "Process commands from FILE."
+			;;
+		help )
+			echo "Usage: ns help { net | host | help | batch }"
+			;;
 		* ) __error "unknown command '${_help_cmd}', try 'ns help help'" ;;
 	esac
 }
@@ -302,6 +320,7 @@ __ns() {
 	case "${_cmd}" in
 		h | host ) __host "${@}" ;;
 		n | net )  __net  "${@}" ;;
+		batch )    __batch "${@}" ;;
 		help )     __help "${@}" ;;
 		* )        __error "unknown command '${_cmd}', try 'ns help'" ;;
 	esac
