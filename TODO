@@ -11,4 +11,14 @@ ip Batch Output
 
 Add option to output commands in a format that can be fed to 'ip -b'.
 Consider which is the more useful case: with or without ip prefixed?
-Possible name: '--(no-)prepend-ip-command'
+Possible name: '--(no-)prepend-ip-command'.
+The conflict I see is that most people are not used to the ip batch
+mode so outputting something you can just redirect to a shell script
+is probably more common.
+
+Change 'all' at once
+--------------------
+
+Specify a special name 'all'. When running commands, this name can be
+used to execute the same acton for all entities of that type. For
+example 'ns host delete all' to delete all hosts.
