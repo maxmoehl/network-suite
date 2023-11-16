@@ -4,6 +4,7 @@ HOST_PREFIX="nsh-"
 NETWORK_PREFIX="nsn-"
 
 Dump=0
+Force=0
 
 __error() {
 	echo "error: ${*}" > /dev/stderr
@@ -205,10 +206,15 @@ __batch() {
 
 	if [ ! -f "${_batch_file}" ]; then __error "'${_batch_file}' is not a file"; fi
 
-	while read -r line; do
-		# We _want_ word splitting, that's the whole reason we are doing this.
-		# shellcheck disable=SC2046
-		__ns $(echo "${line}" | xargs)
+	while read -r _batch_line; do
+		if [ -z "${_batch_line}" ] || [ "#" = "$(echo "${_batch_line}" | cut -c -1)" ]; then
+			continue
+		fi
+
+		_batch_opts=""
+		if [ "${Dump}" != 0 ]; then _batch_opts="${_batch_opts} -d"; fi
+
+		eval "ns ${_batch_opts} ${_batch_line}" || [ "${Force}" != 0 ]
 	done < "${_batch_file}"
 }
 
@@ -246,6 +252,7 @@ __help() {
 			echo "Flags:"
 			echo "  -v --verbose Enable debug logging using 'set -x'."
 			echo "  -d --dump    Print ip commands to stdout instead of executing them."
+			echo "  -f --force   Don't stop on the first error in batch mode."
 			echo
 			echo "Dependencies:"
 			echo "  grep(1)"
@@ -295,7 +302,8 @@ __help() {
 		batch )
 			echo "Usage: ns batch FILE"
 			echo
-			echo "Process commands from FILE."
+			echo "Process commands from FILE. If -d is given it is passed on to each command. This"
+			echo "allows for converting a batch file to a shell script of ip commands."
 			;;
 		help )
 			echo "Usage: ns help { net | host | help | batch }"
@@ -309,6 +317,7 @@ __ns() {
 		case "${1}" in
 			-v | --verbose ) set -x ;;
 			-d | --dump )    Dump=1 ;;
+			-f | --force )   Force=1 ;;
 			-* )             __error "unknown flag '${1}'" ;;
 			* )              break ;;
 		esac

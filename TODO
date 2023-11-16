@@ -1,11 +1,3 @@
-Batch Processing
-----------------
-
-Allow a file as input for commands. Commands should not be prefixed
-with 'ns' in that case. Either via a flag '-b | --batch' or command
-'batch'. Also include the option to force execution to proceed in
-case of failure '-f | --force'.
-
 ip Batch Output
 ---------------
 
