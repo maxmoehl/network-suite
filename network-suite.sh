@@ -34,14 +34,14 @@ __ip() {
 	fi
 }
 
-# Usage: __host_ip NAME IP_COMMAND...
-__host_ip() {
+# Usage: __host_exec NAME COMMAND ARGS...
+__host_exec() {
 	_host_name="${HOST_PREFIX}${1:?error: NAME is empty}"; __validate "${_host_name}"
 	__shift
 
-	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
+	if [ "${#}" -eq 0 ]; then __error "COMMAND is empty"; fi
 
-	__ip -n "${_host_name}" "${@}"
+	__ip netns exec "${_host_name}" "${@}"
 }
 
 # Usage: __host_add NAME
@@ -69,7 +69,7 @@ __host_show() {
 		return
 	fi
 
-	__host_ip "${1}" -br address show
+	__host_exec "${1}" ip -br address show
 }
 
 # Usage: __host_del NAME
@@ -125,7 +125,7 @@ __host() {
 	_host_cmd="${1:-show}"
 	__shift
 	case "${_host_cmd}" in
-		i | ip )           __host_ip "${@}" ;;
+		e | exec )         __host_exec "${@}" ;;
 		a | add )          __host_add "${@}" ;;
 		l | list )         __host_list "${@}" ;;
 		s | show )         __host_show "${@}" ;;
@@ -137,14 +137,14 @@ __host() {
 	esac
 }
 
-# Usage: __net_ip NAME IP_COMMAND...
-__net_ip() {
+# Usage: __net_exec NAME COMMAND ARGS...
+__net_exec() {
 	_net_name="${NETWORK_PREFIX}${1:?error: NAME is empty}"; __validate "${_net_name}"
 	__shift
 
-	if [ "${#}" -eq 0 ]; then __error "IP_COMMAND is empty"; fi
+	if [ "${#}" -eq 0 ]; then __error "COMMAND is empty"; fi
 
-	__ip -n "${_net_name}" "${@}"
+	__ip netns exec "${_net_name}" "${@}"
 }
 
 # Usage: __net_add NAME
@@ -176,7 +176,7 @@ __net_show() {
 		return
 	fi
 
-	__net_ip "${1}" -br address show
+	__net_exec "${1}" ip -br address show
 }
 
 # Usage: __net_del NAME
@@ -190,7 +190,7 @@ __net() {
 	_net_cmd="${1:-show}"
 	__shift
 	case "${_net_cmd}" in
-		i | ip )           __net_ip "${@}" ;;
+		e | exec )         __net_exec "${@}" ;;
 		a | add )          __net_add "${@}" ;;
 		l | list )         __net_list "${@}" ;;
 		s | show )         __net_show "${@}" ;;
@@ -225,13 +225,13 @@ __help() {
 			echo "    add     NAME"
 			echo "    show"
 			echo "    delete  NAME"
-			echo "    ip      NAME IP_COMMAND"
+			echo "    exec    NAME COMMAND [ ARGS ]"
 			echo "  host"
 			echo "    add     NAME"
 			echo "    show"
 			echo "    delete  NAME"
 			echo "    connect NAME NETWORK IP"
-			echo "    ip      NAME IP_COMMAND"
+			echo "    exec    NAME COMMAND [ ARGS ]"
 			echo "  batch     FILE"
 			echo "  help"
 			echo "    net"
@@ -264,8 +264,8 @@ __help() {
 			echo "ns net { add | delete | show } NAME"
 			echo "  Add, delete or show the named network."
 			echo
-			echo "ns net ip NAME IP_COMMAND"
-			echo "  Execute an ip command in the namespace of the network."
+			echo "ns net exec NAME COMMAND [ ARGS ]"
+			echo "  Execute COMMAND in the namespace of the network."
 			;;
 		host )
 			echo "Usage: ns host [ list | show ]"
@@ -289,8 +289,8 @@ __help() {
 			echo "  Spawn a shell on the host with NAME. The command will try to identify the"
 			echo "  calling user and run a login shell for that user (defaults to root)."
 			echo
-			echo "ns host ip NAME IP_COMMAND"
-			echo "  Execute an ip command in the namespace of the host."
+			echo "ns host exec NAME COMMAND [ ARGS ]"
+			echo "  Execute COMMAND in the namespace of the host."
 			;;
 		batch )
 			echo "Usage: ns batch FILE"
